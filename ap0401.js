@@ -17,7 +17,7 @@ function init() {
     z: 10,
     nRow: 6, /* ブロックの行数 */
     nCol: 9, /* ブロックの列数 */
-    axes: true,
+    axes: false,
   };
 
   // シーン作成
@@ -254,7 +254,7 @@ function init() {
         brick.position.set(
           (w + gapX) * (c - (param.nCol-1)/2),
           0,
-          -(h + gapZ) * r
+          -(d + gapZ) * r
         )
         brick.geometry.computeBoundingBox();
         bricks.add(brick);
@@ -291,7 +291,7 @@ function init() {
           hit = true;
           brick.visible = false;
           nBrick--;
-          score += (Math.abs(brick.position.z) +1)*100
+          score += (Math.abs(brick.position.z)/0.7 +1)*100
           vz = -vz
           if (nBrick === 0) {
             const bonus = 1000; 
