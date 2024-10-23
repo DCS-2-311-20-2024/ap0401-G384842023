@@ -1,6 +1,6 @@
 //
 // 応用プログラミング 第4回 課題 (ap0401)
-// G384002023 拓殖太郎
+// G384842023 堀部楓真
 //
 "use strict"; // 厳格モード
 
@@ -55,6 +55,13 @@ function init() {
   let vz = -Math.cos(pi / 4);
 
   function moveBall(delta) {
+    if (ballLive){
+      vBall.set(vx, 0,vz)
+    ball.position.addScaledVector(vBall, delta * speed);
+    } else {
+      ball.position.x = paddle.position.x;
+      ball.position.z = paddle.position.z -  2 * ballR;
+    }
   }
 
   // ボールの死活
@@ -63,10 +70,14 @@ function init() {
 
   // ボールを停止する
   function stopBall() {
+    speed = 0;
+    ballLive = false;
   }
 
   // ボールを動かす
   function startBall() {
+    ballLive = true;
+    speed = 10;
   }
 
   // マウスクリックでスタートする
@@ -96,8 +107,13 @@ function init() {
       new THREE.BoxGeometry(vFrameW, vFrameH, vFrameD),
       new MeshPhongMaterial({ color: 0xB3B3B3 })
     );
+    lFrame.position.x = -(hFrameW - vFrameW) / 2;
+    scene.add(lFrame); 
 
     //   右の枠
+    const rFrame = lFrame.clone();
+    rFrame.position.x = (hFrameW - vFrameW) / 2;
+    scene.add(rFrame); 
 
   }
 
@@ -106,13 +122,26 @@ function init() {
   const vLimit = vFrameD / 2;
   function frameCheck() {
     // 右
-
+    if(ball.position.x + ballR > hLimit){
+      ball.position.x = hLimit - ballR;
+      vx = -Math.abs(vx);
+    }
     // 左
-
+    if(ball.position.x - ballR < -hLimit){
+      ball.position.x = -hLimit + ballR;
+      vx = Math.abs(vx);
+    }
     // 上
-
+    if(ball.position.z - ballR < -vLimit){
+      ball.position.z = -vLimit + ballR;
+      vz = Math.abs(vz);
+    }
     // 下
-
+    if(ball.position.z + ballR > vLimit){
+      //ball.position.z = vLimit - ballR;
+      //vz = -Math.abs(vz);
+      stopBall();
+    }
   }
 
   // パドル ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
@@ -126,18 +155,25 @@ function init() {
       new THREE.CylinderGeometry(paddleR, paddleR, paddleL, nSeg),
       new THREE.MeshPhongMaterial({ color: 0x333333, shininess: 100, specular: 0x404040 })
     );
-
+    center.rotation.z = Math.PI / 2;
+    paddle.add(center)
     // パドル端
     const sideGeometry
       = new THREE.SphereGeometry(paddleR, nSeg, nSeg, Math.PI / 2, Math.PI);
     const sideMaterial
       = new THREE.MeshPhongMaterial({ color: 0x666666, shininess: 100, specular: 0xa0a0a0 })
     // パドル端(右)
-
+    const right = new THREE.Mesh(sideGeometry,sideMaterial)
+    right.position.x = paddleL / 2;
+    paddle.add(right)
     // パドル端(左)
-
+    const left = right.clone();
+    left.rotation.z = Math.PI;
+    left.position.x = -(paddleL) / 2;
+    paddle.add(left)
     // パドルの配置
-
+    paddle.position.z = 0.4 * vFrameD;
+    scene.add(paddle)
   }
   
 
@@ -148,15 +184,39 @@ function init() {
     const raycaster = new THREE.Raycaster();
     const intersects = new THREE.Vector3();
     function paddleMove(event) {
-  
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      raycaster.setFromCamera(mouse,camera);
+      raycaster.ray.intersectPlane(plane,intersects);
+      const offset = hFrameW / 2 - vFrameW - paddleL / 2 - paddleR;
+      if (intersects.x < -offset){
+        intersects.x = -offset;
+      }
+      else if (intersects.x > offset){
+        intersects.x = offset;
+      }
+      paddle.position.x = intersects.x;
     }
     window.addEventListener("mousemove", paddleMove, false);
   }
 
   // パドルの衝突検出
   function paddleCheck() {
-  
+    if (Math.abs(ball.position.z - paddle.position.z) < paddleR + ballR &&
+        Math.abs(ball.position.x - paddle.position.x) < paddleL /2 + ballR){
+      if(ball.position.z < paddle.position.z){
+        vz = - Math.abs(vz);
+      }
+      //右側部分衝突
+      if ( ball.position.x > paddle.position.x + paddleL){
+        vx = Math.abs(vx);
+      }
+      //左側衝突
+      if ( ball.position.x < paddle.position.x - paddleL){
+        vx = - Math.abs(vx);
+      }
+    }
   }
+
 
   // ブロック ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
   // ブロックの生成
